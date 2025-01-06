@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Wexchanger</string>
+    <string name="title_tool_bar">WAVE Exchanger</string>
+    <string name="title_from_currency">From</string>
+    <string name="title_to_currency">To</string>
+    <string name="calculate_exchange_rate">Calculate Exchange Rate</string>
+    <string name="currency_rate">1 %1$s = %2$s %3$s</string>
+    <string name="currency_label_format">%1$s - %2$s</string>
+</resources>
