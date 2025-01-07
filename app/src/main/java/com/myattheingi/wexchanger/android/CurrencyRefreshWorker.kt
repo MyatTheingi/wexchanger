@@ -44,7 +44,7 @@ class CurrencyRefreshWorker @AssistedInject constructor(
 
             val currencyWorkRequest =
                 PeriodicWorkRequestBuilder<CurrencyRefreshWorker>(
-                    30,
+                    1440 ,
                     TimeUnit.MINUTES
                 ) // Runs every 30 minutes
                     .setConstraints(workConstraints) // Apply constraints

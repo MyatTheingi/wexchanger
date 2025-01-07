@@ -38,6 +38,7 @@ fun <T> DynamicSelectTextField(
     ) {
         OutlinedTextField(
             readOnly = true,
+            singleLine = true,
             value = selectedValue?.let { itemLabelProvider(it) } ?: "",
             onValueChange = {},
             label = { Text(text = stringResource(id = label)) },

@@ -5,10 +5,10 @@ import com.myattheingi.wexchanger.core.data.local.models.CurrencyListEntity
 import com.myattheingi.wexchanger.core.data.local.models.LiveRateEntity
 import com.myattheingi.wexchanger.core.data.remote.datasource.CurrencyRemoteDataSource
 import com.myattheingi.wexchanger.core.di.IoDispatcher
+import com.myattheingi.wexchanger.core.domain.models.CurrencyExchange
 import com.myattheingi.wexchanger.core.domain.models.CurrencyInfo
-import com.myattheingi.wexchanger.core.domain.models.CurrencyQuotes
+import com.myattheingi.wexchanger.core.domain.models.CurrencyRate
 import com.myattheingi.wexchanger.core.domain.models.asDomainModel
-import com.myattheingi.wexchanger.core.domain.models.toCurrencyQuotes
 import com.myattheingi.wexchanger.core.domain.repositories.CurrencyRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
@@ -25,7 +25,6 @@ class CurrencyRepositoryImpl @Inject constructor(
     @IoDispatcher private val dispatcher: CoroutineDispatcher,
 ) : CurrencyRepository {
 
-    // Cache Live Rates from Remote to Local (Room)
     override suspend fun fetchAndStoreLiveRates() {
         withContext(dispatcher) {
             try {
@@ -42,15 +41,14 @@ class CurrencyRepositoryImpl @Inject constructor(
         }
     }
 
-    // Get Live Rates, fallback to local if necessary
-    override suspend fun getLiveRates(): Flow<Result<CurrencyQuotes>> {
+    override suspend fun getLiveRates(): Flow<Result<List<CurrencyRate>>> {
         return flow {
             try {
                 // Try fetching from local first
                 val cachedLiveRates = local.getLiveRates()
                 if (cachedLiveRates != null && System.currentTimeMillis() - cachedLiveRates.timestamp < 30 * 60 * 1000) {
                     // Use cached data if it is less than 30 minutes old
-                    val quotes = cachedLiveRates.rates.toCurrencyQuotes()
+                    val quotes = cachedLiveRates.rates.asDomainModel()
                     emit(Result.success(quotes))
                 } else {
                     // Otherwise, fetch from remote
@@ -61,7 +59,7 @@ class CurrencyRepositoryImpl @Inject constructor(
                             timestamp = System.currentTimeMillis()
                         )
                     )
-                    val quotes = remoteLiveRates.toCurrencyQuotes()
+                    val quotes = remoteLiveRates.asDomainModel()
                     emit(Result.success(quotes))
                 }
             } catch (e: Exception) {
@@ -72,7 +70,6 @@ class CurrencyRepositoryImpl @Inject constructor(
         }.flowOn(dispatcher)
     }
 
-    // Get Currency List from Remote to Local (Room)
     override suspend fun fetchAndStoreCurrencyList() {
         withContext(dispatcher) {
             try {
@@ -84,7 +81,6 @@ class CurrencyRepositoryImpl @Inject constructor(
         }
     }
 
-    // Get Currency List, fallback to local if available
     override suspend fun getCurrencyList(): Flow<Result<List<CurrencyInfo>>> {
         return flow {
             val cachedCurrencyList = local.getCurrencyList()
@@ -103,66 +99,85 @@ class CurrencyRepositoryImpl @Inject constructor(
         }.flowOn(dispatcher)
     }
 
-    // Convert Currency (using remote data)
-    override suspend fun convertCurrency(
+    override suspend fun convertCurrencyToAll(
+        from: String,
+        amount: Double
+    ): Flow<Result<List<CurrencyExchange>>> {
+        return flow {
+            try {
+                val liveRates = local.getLiveRates()?.rates ?: emptyMap()
+                val conversionResults = mutableMapOf<String, Pair<Double, Double>>()
+
+                val toCurrencies = liveRates.keys
+                    .map { it.takeLast(3) }
+                    .distinct()
+                    .filter { it != from } // Remove the 'from' currency from the list
+
+                toCurrencies.forEach { to ->
+                    val conversionResult = convertAmount(from, to, amount, liveRates)
+                    val unitConversionResult = convertAmount(from, to, 1.0, liveRates)
+
+                    if (conversionResult.isNaN() || conversionResult.isInfinite()) {
+                        conversionResults[to] = Pair(Double.NaN, Double.NaN)
+                    } else {
+                        conversionResults[to] = Pair(unitConversionResult, conversionResult)
+                    }
+                }
+
+
+                val quotes = conversionResults.asDomainModel()
+                emit(Result.success(quotes))
+
+            } catch (e: Exception) {
+                emit(Result.failure(e))
+            }
+        }.flowOn(dispatcher)
+    }
+
+    override suspend fun convertCurrencyToSingle(
         from: String,
         to: String,
         amount: Double
     ): Flow<Result<Double>> {
-
         return flow {
             try {
                 val liveRates = local.getLiveRates()?.rates ?: emptyMap()
-                val conversionResult = when {
-                    from == "USD" -> {
-                        val conversionRate = liveRates["USD$to"] ?: 0.0
-                        amount * conversionRate
-                    }
-
-                    to == "USD" -> {
-                        val conversionRate = liveRates["USD$from"] ?: 0.0
-                        amount / conversionRate
-                    }
-
-                    else -> {
-                        val usdToTarget = liveRates["USD$to"] ?: 0.0
-                        val usdToBase = liveRates["USD$from"] ?: 0.0
-                        amount * (usdToTarget / usdToBase)
-                    }
-                }
+                val conversionResult = convertAmount(from, to, amount, liveRates)
 
                 if (conversionResult.isNaN() || conversionResult.isInfinite()) {
-                    emit(Result.failure<Double>(IllegalArgumentException("Invalid conversion rate or amount")))
+                    emit(Result.failure(IllegalArgumentException("Invalid conversion rate or amount")))
                 } else {
                     emit(Result.success(conversionResult))
                 }
             } catch (e: Exception) {
-                emit(Result.failure<Double>(e))
+                emit(Result.failure(e))
             }
         }.flowOn(dispatcher)
     }
 
 
-//    override suspend fun convertCurrency(from: String, to: String, amount: Double): Flow<Result<Double>> {
-//        return withContext(dispatcher) {
-//            val liveRates = local.getLiveRates()?.rates ?: emptyMap()
-//            when {
-//                from == "USD" -> {
-//                    val conversionRate = liveRates["USD$to"] ?: 0.0
-//                    amount * conversionRate
-//                }
-//
-//                to == "USD" -> {
-//                    val conversionRate = liveRates["USD$from"] ?: 0.0
-//                    amount / conversionRate
-//                }
-//
-//                else -> {
-//                    val usdToTarget = liveRates["USD$to"] ?: 0.0
-//                    val usdToBase = liveRates["USD$from"] ?: 0.0
-//                    amount * (usdToTarget / usdToBase)
-//                }
-//            }
-//        }
-//    }
+    private fun convertAmount(
+        from: String,
+        to: String,
+        amount: Double,
+        liveRates: Map<String, Double>
+    ): Double {
+        return when {
+            from == "USD" -> {
+                val conversionRate = liveRates["USD$to"] ?: 0.0
+                amount * conversionRate
+            }
+
+            to == "USD" -> {
+                val conversionRate = liveRates["USD$from"] ?: 0.0
+                amount / conversionRate
+            }
+
+            else -> {
+                val usdToTarget = liveRates["USD$to"] ?: 0.0
+                val usdToBase = liveRates["USD$from"] ?: 0.0
+                amount * (usdToTarget / usdToBase)
+            }
+        }
+    }
 }

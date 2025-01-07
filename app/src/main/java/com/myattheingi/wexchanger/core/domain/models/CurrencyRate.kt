@@ -4,13 +4,11 @@ data class CurrencyRate(
     val pair: String,
     val rate: Double
 )
-data class CurrencyQuotes(
-    val quotes: List<CurrencyRate>
-)
 
-fun Map<String, Double>.toCurrencyQuotes(): CurrencyQuotes {
+
+fun Map<String, Double>.asDomainModel(): List<CurrencyRate> {
     val currencyRates = this.map { (pair, rate) ->
         CurrencyRate(pair, rate)
     }
-    return CurrencyQuotes(quotes = currencyRates)
+    return currencyRates
 }

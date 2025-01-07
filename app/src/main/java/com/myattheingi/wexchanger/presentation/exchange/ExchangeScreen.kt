@@ -1,22 +1,20 @@
-package com.myattheingi.wexchanger.presentation.currency_converter
+package com.myattheingi.wexchanger.presentation.exchange
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -31,31 +29,29 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.zIndex
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.myattheingi.wexchanger.R
-import com.myattheingi.wexchanger.presentation.MainViewModel
+import com.myattheingi.wexchanger.core.utils.toFormattedString
+import com.myattheingi.wexchanger.core.utils.toLocaleString
 import com.myattheingi.wexchanger.presentation.components.AmountInputTextField
 import com.myattheingi.wexchanger.presentation.components.CircularIconButton
 import com.myattheingi.wexchanger.presentation.components.DynamicSelectTextField
 import com.myattheingi.wexchanger.presentation.components.PrettyProgressBar
-import com.myattheingi.wexchanger.presentation.theme.LocalTopAppBarColors
 
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CurrencyConverterScreen(vm: MainViewModel) {
-    val uiState by vm.uiState.collectAsState()
+fun ExchangeScreen(viewModel: ExchangeViewModel = hiltViewModel()) {
+    val uiState by viewModel.uiState.collectAsState()
 
-    val topBarColors = LocalTopAppBarColors.current
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(vm.event) {
-        vm.event.collect { event ->
+    LaunchedEffect(viewModel.event) {
+        viewModel.event.collect { event ->
             when (event) {
-                is MainViewModel.Event.Failure -> {
+                is ExchangeViewModel.Event.Failure -> {
                     snackbarHostState.showSnackbar(event.throwable.message ?: "Error occurred")
                 }
 
-                is MainViewModel.Event.Success -> {
+                is ExchangeViewModel.Event.Success -> {
                     snackbarHostState.showSnackbar(event.message)
                 }
             }
@@ -63,36 +59,25 @@ fun CurrencyConverterScreen(vm: MainViewModel) {
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(stringResource(id = R.string.title_tool_bar))
-                },
-                colors = topBarColors
-            )
-        }
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { innerPadding ->
 
         if (uiState.isLoading) {
             PrettyProgressBar()
-
         } else {
-
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .padding(dimensionResource(id = R.dimen.gap_16)),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .padding(dimensionResource(id = R.dimen.gap_16))
+                    .verticalScroll(rememberScrollState()),  // Make it scrollable
+                horizontalAlignment = Alignment.Start
             ) {
-
-
                 Box(
-                    contentAlignment = Alignment.Center, // Center the overlapping button
+                    contentAlignment = Alignment.Center,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
+                    Column {
                         DynamicSelectTextField(
                             selectedValue = uiState.fromCurrencyInfo,
                             options = uiState.currencies,
@@ -104,10 +89,10 @@ fun CurrencyConverterScreen(vm: MainViewModel) {
                                     currencyInfo.name
                                 )
                             },
-                            onValueChangedEvent = { vm.onFromCurrencyInfoSelected(it) }
+                            onValueChangedEvent = { viewModel.onFromCurrencyInfoSelected(it) }
                         )
-                        Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen.gap_32)))
                         DynamicSelectTextField(
+                            modifier = Modifier.padding(top = dimensionResource(id = R.dimen.gap_32)),
                             selectedValue = uiState.toCurrencyInfo,
                             options = uiState.currencies,
                             label = R.string.title_to_currency,
@@ -118,13 +103,13 @@ fun CurrencyConverterScreen(vm: MainViewModel) {
                                     currencyInfo.name
                                 )
                             },
-                            onValueChangedEvent = { vm.onToCurrencyInfoSelected(it) }
+                            onValueChangedEvent = { viewModel.onToCurrencyInfoSelected(it) }
                         )
                     }
 
                     // Overlapping CircularIconButton
                     CircularIconButton(
-                        onClick = { vm.onCurrencyReverseClicked() },
+                        onClick = { viewModel.onCurrencyReverseClicked() },
                         icon = Icons.Filled.SwapHoriz,
                         contentDescription = "Reverse currencies",
                         modifier = Modifier
@@ -133,66 +118,60 @@ fun CurrencyConverterScreen(vm: MainViewModel) {
                     )
                 }
 
-                Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen.gap_16)))
-
-                // Amount input field
                 AmountInputTextField(
-                    value = uiState.fromAmount ?: "",
-                    onValueChanged = { vm.onAmountEntered(it) }
+                    modifier = Modifier.padding(top = dimensionResource(id = R.dimen.gap_16)),
+                    value = uiState.fromAmount.toLocaleString(),
+                    onValueChanged = { viewModel.onAmountEntered(it) }
                 )
-
-                Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen.gap_16)))
-
-                // Calculate exchange rate button
                 Button(
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = { vm.calculateExchangeRate() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = dimensionResource(id = R.dimen.gap_16)),
+                    onClick = { viewModel.calculateExchangeRate() },
                     enabled = uiState.isCalculateEnabled
                 ) {
                     Text(stringResource(id = R.string.calculate_exchange_rate))
                 }
 
-                Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen.gap_16)))
-
-                // Exchange rate result
                 Text(
                     text = buildAnnotatedString {
                         withStyle(SpanStyle(color = Color.Gray)) {
-                            append("${uiState.fromAmount} ${uiState.fromCurrencyInfo.name} =\n")
+                            append("${uiState.fromAmount.toFormattedString()} ${uiState.fromCurrencyInfo.name} =\n")
                         }
                         withStyle(SpanStyle(color = Color.Black)) {
-                            append("${uiState.exchangeRate} ${uiState.toCurrencyInfo.name}")
+                            append("${uiState.exchangeRate.toFormattedString()} ${uiState.toCurrencyInfo.name}")
                         }
                     },
                     style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.fillMaxWidth()
-                )
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = dimensionResource(id = R.dimen.gap_16)),
 
+                    )
 
-                Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen.gap_16)))
 
                 Text(
                     text = stringResource(
                         id = R.string.currency_rate,
                         uiState.fromCurrencyInfo.code,
-                        uiState.unitRateFromTo,
+                        uiState.unitRateFromTo.toFormattedString(),
                         uiState.toCurrencyInfo.code
                     ),
                     style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .padding(top = dimensionResource(id = R.dimen.gap_16))
                 )
+
                 Text(
                     text = stringResource(
                         id = R.string.currency_rate,
                         uiState.toCurrencyInfo.code,
-                        uiState.unitRateToFrom,
+                        uiState.unitRateToFrom.toFormattedString(),
                         uiState.fromCurrencyInfo.code
                     ),
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.fillMaxWidth()
+                    style = MaterialTheme.typography.bodyMedium
                 )
             }
         }
     }
 }
-

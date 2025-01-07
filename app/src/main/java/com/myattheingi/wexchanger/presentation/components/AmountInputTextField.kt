@@ -17,32 +17,46 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.myattheingi.wexchanger.R
+import com.myattheingi.wexchanger.core.utils.toNullableDouble
 
 @Composable
 fun AmountInputTextField(
+    modifier: Modifier = Modifier,
     value: String,
     onValueChanged: (String) -> Unit
 ) {
+
+    val validAmountMessage = stringResource(id = R.string.error_valid_amount)
+    val amountGreaterThanZeroMessage = stringResource(id = R.string.error_amount_greater_than_zero)
+
     var errorMessage by remember { mutableStateOf("") }
 
-    Column(modifier = Modifier.fillMaxWidth()) {
+
+    Column(modifier = modifier.fillMaxWidth()) {
         TextField(
             value = value,
-            onValueChange = { newAmount ->
-                onValueChanged(newAmount) // Update the state externally
+            onValueChange = { newValue ->
+
+                val parsedValue = newValue.toNullableDouble()
+                if (parsedValue != null || newValue.lastOrNull() != '.') {
+                    // Update state with the new value
+                    onValueChanged(newValue)
+                }
+
                 errorMessage = when {
-                    newAmount.toDoubleOrNull() == null -> "Please enter a valid number"
-                    newAmount.toDouble() < 0 -> "Please enter a valid amount"
-                    newAmount.toDouble() == 0.0 -> "Please enter an amount greater than 0"
+                    parsedValue == null || parsedValue < 0 -> validAmountMessage
+                    parsedValue == 0.0 -> amountGreaterThanZeroMessage
                     else -> ""
                 }
             },
-            label = { Text("Amount") },
+            label = { Text(stringResource(R.string.title_amount)) },
             isError = errorMessage.isNotEmpty(),
-            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
+            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Decimal),
             modifier = Modifier.fillMaxWidth(),
             trailingIcon = {
                 if (value.isNotEmpty()) {
@@ -63,11 +77,12 @@ fun AmountInputTextField(
     }
 }
 
+
 @Preview(showBackground = true)
 @Composable
 fun PreviewAmountInputTextField() {
     AmountInputTextField(
-        value = "200.00",
+        value = "1.0",
         onValueChanged = { }
     )
 }

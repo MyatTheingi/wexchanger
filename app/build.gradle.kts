@@ -56,27 +56,27 @@ android {
 dependencies {
     // Core libraries
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.material)
     implementation(libs.androidx.activity)
-    implementation(libs.androidx.constraintlayout)
 
     // Jetpack Compose Libraries
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.material.icons)
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    implementation(libs.androidx.material.icons)
+
 
     // Hilt for Dependency Injection
     implementation(libs.hilt.android)
+    implementation(libs.androidx.navigation.compose)
     ksp(libs.hilt.compiler)
 
     // Hilt Jetpack
     implementation(libs.androidx.hilt.common)
     implementation(libs.androidx.hilt.work)
+    implementation(libs.androidx.hilt.navigation)
     ksp(libs.androidx.hilt.compiler)
 
     // Room for Local Database
@@ -93,6 +93,8 @@ dependencies {
     // Lifecycle and ViewModel
     implementation(libs.lifecycle.viewmodel)
     implementation(libs.lifecycle.livedata)
+    implementation(libs.lifecycle.viewmodel.compose)
+
 
     // WorkManager for Background Tasks
     implementation(libs.workmanager)
@@ -106,7 +108,7 @@ dependencies {
 
     // Testing dependencies
     testImplementation(libs.junit)
-    debugImplementation(libs.ui.tooling)
+    debugImplementation(libs.androidx.ui.tooling)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

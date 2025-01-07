@@ -6,4 +6,9 @@
     <string name="calculate_exchange_rate">Calculate Exchange Rate</string>
     <string name="currency_rate">1 %1$s = %2$s %3$s</string>
     <string name="currency_label_format">%1$s - %2$s</string>
+    <string name="title_currency">Currency</string>
+    <string name="title_rate">Rate</string>
+    <string name="title_amount">Amount</string>
+    <string name="error_valid_amount">Please enter a valid amount</string>
+    <string name="error_amount_greater_than_zero">Please enter an amount greater than 0</string>
 </resources>

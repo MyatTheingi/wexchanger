@@ -1,15 +1,15 @@
-package com.myattheingi.wexchanger.presentation.currency_converter
+package com.myattheingi.wexchanger.presentation.exchange
 
 import com.myattheingi.wexchanger.core.domain.models.CurrencyInfo
 
-data class CurrencyUiState(
+data class UiState(
     val currencies: List<CurrencyInfo>,
     val fromCurrencyInfo: CurrencyInfo,
     val toCurrencyInfo: CurrencyInfo,
-    val fromAmount: String?,
-    val exchangeRate: String?,
-    val unitRateFromTo: String,
-    val unitRateToFrom: String,
+    val fromAmount: Double?,
+    val exchangeRate: Double?,
+    val unitRateFromTo: Double,
+    val unitRateToFrom: Double,
     val isLoading: Boolean,
     val isCalculateEnabled: Boolean,
 ) {
@@ -17,10 +17,10 @@ data class CurrencyUiState(
         emptyList(),
         CurrencyInfo("MMK", "Myanma Kyat"),
         CurrencyInfo("USD", "United States Dollar"),
-        "1.00",
-        "",
-        "",
-        "",
+        1.0,
+        0.0,
+        0.0,
+        0.0,
         false,
         false,
     )
