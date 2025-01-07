@@ -3,6 +3,7 @@ package com.myattheingi.wexchanger.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.work.WorkManager
+import com.myattheingi.wexchanger.android.CurrencyRefreshWorker
 import com.myattheingi.wexchanger.core.domain.models.CurrencyInfo
 import com.myattheingi.wexchanger.core.domain.usecases.ConvertCurrencyToSingle
 import com.myattheingi.wexchanger.core.domain.usecases.GetCurrencyList
@@ -23,14 +24,15 @@ import javax.inject.Inject
 @HiltViewModel
 class MainViewModel @Inject constructor(
     workManager: WorkManager,
-    ) : ViewModel() {
+) : ViewModel() {
 
 
     private val _event = MutableSharedFlow<Event>(extraBufferCapacity = 1)
     val event: SharedFlow<Event> = _event.asSharedFlow()
 
+    // TODO : catch the workerManager status flow in later
     init {
-        //CurrencyRefreshWorker.enqueuePeriodically(workManager)
+        CurrencyRefreshWorker.enqueuePeriodically(workManager)
     }
 
 

@@ -33,7 +33,7 @@ This Currency Conversion App is designed to provide seamless and efficient curre
 ## Screenshots:
 
 <div style="display: flex; overflow-x: auto; gap: 16px;">
-    <img src="https://github.com/MyatTheingi/wexchanger/screeenshot/home.png" alt="Screenshot 1" width="300" />
-    <img src="https://github.com/MyatTheingi/wexchanger/screeenshot/exchange-list.png" alt="Screenshot 2" width="300" />
-    <img src="https://github.com/MyatTheingi/wexchanger/screeenshot/exchange.png" alt="Screenshot 3" width="300" />
+    <img src="https://github.com/MyatTheingi/wexchanger/blob/main/screenshot/home.jpg" alt="Screenshot 1" width="300" />
+    <img src="https://github.com/MyatTheingi/wexchanger/blob/main/screenshot/exchange-list.jpg" alt="Screenshot 2" width="300" />
+    <img src="https://github.com/MyatTheingi/wexchanger/blob/main/screenshot/exchange.jpg" alt="Screenshot 3" width="300" />
 </div>
